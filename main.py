@@ -2,6 +2,8 @@ import os
 import imageio
 import numpy as np
 import cv2
+from matplotlib import pyplot as plt
+import matplotlib.cm as cm
 #Calculate DCT freqeuncy coefficients
 """
           N-1
@@ -53,18 +55,32 @@ def dct_2d(image, numberCoefficients=0):
         imageCol[:, w] = dct_1d(imageRow[:, w], nc) 
 
     return imageCol
+def gaussianBlur(img,ksize=(5,5),sigma=10):
+    #kernel = cv2.getGaussianKernel(ksize,sigma)
+    dst = np.zeros_like(img)
+    cv2.GaussianBlur(src=img,dst=dst,ksize=ksize,sigmaX=0)
+    return dst
+
+        
 
 if __name__=="__main__":
     images = readImages('img/')
     print('Found images:',len(images))
     dct={}
     for i in range(len(images)):
-        #imgResult = dct_2d(images[i],numberCoefficients=1000)
+        plt.figure(i)
+        dst = gaussianBlur(images[i])
+        plt.subplot(121),plt.imshow(images[i],cmap=cm.Greys_r),plt.title('Original')
+        plt.xticks([]), plt.yticks([])
+        plt.subplot(122),plt.imshow(dst,cmap=cm.Greys_r),plt.title('Gaussian Blurred')
+        plt.xticks([]), plt.yticks([])
         imgResult = cv2.dct(images[i])
         dct[i]=imgResult
         img = np.uint8(imgResult*255.0)
         print('Writing dct256_B'+str(i)+'.png...')
         imageio.imwrite('dct256_B'+str(i)+'.png', img)
-
+    #WARNING:
+    plt.show() #--> Figures created through the pyplot interface will consume too much memory until explicitly closed.
+        
 
 
