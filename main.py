@@ -72,8 +72,6 @@ def plotFace(original,blurred):
     plt.subplot(122),plt.imshow(blurred,cmap=cm.Greys_r),plt.title('Gaussian Blurred')
     plt.xticks([]), plt.yticks([])
     return None
-    
-    
 """
 # Load data (deserialize)
 with open('filename.pickle', 'rb') as handle:
@@ -91,7 +89,6 @@ if __name__=="__main__":
             print('Creating output folder:',d)
     
     for i in range(len(images)):
-        
         plt.figure(i)
         blurredImage = gaussianBlur(images[i])
         plotFace(images[i],blurredImage)
@@ -124,8 +121,8 @@ if __name__=="__main__":
             
         
         
-    #WARNING:
+    ######WARNING START######
     #plt.show() #--> Figures created through the pyplot interface will consume too much memory until explicitly closed.
-        
+    ######WARNING END########    
 
 
