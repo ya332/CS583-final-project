@@ -46,12 +46,22 @@ def computeHash(img):
     low_freq_dct = img_DCT[:8, 1:9]
     avg = np.mean(low_freq_dct)
     img_hash = np.where(low_freq_dct > avg, 1, 0)
-    hash = int("".join(map(str, img_hash.flatten())))
+    hash = "".join(map(str, img_hash.flatten()))
     return hash
 
-def compareHash(input_hash, dict):
-    pass
-    # currently working on what technique to use for comparing hashes
+def hammingDist(x, y):
+    x = list(x)
+    y = list(y)
+    hd = sum([int(x[i]) ^ int(y[i]) for i in range(len(x))])
+    return hd
+
+
+def compareHash(query_hash, dict, r):
+    retdict = []
+    for hash in dict.keys():
+        if hammingDist(query_hash, hash) <= r:
+            retdict.append(hash)
+    return retdict
 
 """
 # Load data (deserialize)
@@ -74,39 +84,46 @@ if __name__=="__main__":
         blurredImage = gaussianBlur(images[i])
         plotFace(images[i],blurredImage)
         baselineHash, blurredHash= computeHash(images[i]), computeHash(blurredImage)
-        baseline_dict[baselineHash] = ['original_'+i+1]
-        blurred_dict[blurredHash] = ['blurred_'+i+1]
+        baseline_dict[baselineHash] = ['original_'+str(i+1)]
+        blurred_dict[blurredHash] = ['blurred_'+str(i+1)]
 
         ####WRITE Baseline Images####
-        imgBase = np.uint8(baselineDCT*255.0)
-        print('Writing dct256_Base'+str(i)+'.png...')
-        dirname=dirnames[0]
-        imageio.imwrite(os.path.join(dirname,'dct256_Base'+str(i)+'.png'), imgBase)
-
-        ###WRITE Baseline Coefficients###
-        # Store data (serialize)
-        with open(DEFAULT_BASELINE_DCT, 'wb') as fbase:
-            pickle.dump(baseline_dict, fbase, protocol=pickle.HIGHEST_PROTOCOL)
-
-        ####WRITE Blurred Images####
-        imgBlur = np.uint8(blurredDCT*255.0)
-        print('Writing dct256_Blurr'+str(i)+'.png...')
-        dirname=dirnames[1]
-        imageio.imwrite(os.path.join(dirname,'dct256_Blur'+str(i)+'.png'), imgBlur)
-
-        ###WRITE Blurred Coefficients###
-        # Store data (serialize)
-        with open(DEFAULT_BLURRED_DCT, 'wb') as fblurred:
-            pickle.dump(blurred_dict, fblurred, protocol=pickle.HIGHEST_PROTOCOL)
+        # imgBase = np.uint8(baselineDCT*255.0)
+        # print('Writing dct256_Base'+str(i)+'.png...')
+        # dirname=dirnames[0]
+        # imageio.imwrite(os.path.join(dirname,'dct256_Base'+str(i)+'.png'), imgBase)
+        #
+        # ###WRITE Baseline Coefficients###
+        # # Store data (serialize)
+        # with open(DEFAULT_BASELINE_DCT, 'wb') as fbase:
+        #     pickle.dump(baseline_dict, fbase, protocol=pickle.HIGHEST_PROTOCOL)
+        #
+        # ####WRITE Blurred Images####
+        # imgBlur = np.uint8(blurredDCT*255.0)
+        # print('Writing dct256_Blurr'+str(i)+'.png...')
+        # dirname=dirnames[1]
+        # imageio.imwrite(os.path.join(dirname,'dct256_Blur'+str(i)+'.png'), imgBlur)
+        #
+        # ###WRITE Blurred Coefficients###
+        # # Store data (serialize)
+        # with open(DEFAULT_BLURRED_DCT, 'wb') as fblurred:
+        #     pickle.dump(blurred_dict, fblurred, protocol=pickle.HIGHEST_PROTOCOL)
 
     ### TESTING ON ALTERED DATASET ###
     # Loading the test datasets
-    testdata_cropped = readImages('./cropped_img/')
-    testdata_annotated = readImages('./annotated/')
-    testdata_rot180 = readImages('./rot_180/')
-    testdata_rot45 = readImages('./rot_45/')
-    cropped_dict, annotated_dict, rot180_dict, rot45_dict = {}, {}, {}, {}
-    print('Read test datasets')
+    testdata_cropped = os.listdir('./cropped_img/')
+    testdata_annotated = os.listdir('./annotated/')
+    testdata_rot180 = os.listdir('./rot_180/')
+    testdata_rot45 = os.listdir('./rot_45/')
+
+    print('testdata_cropped')
+
+    # testdata_cropped = readImages('./cropped_img/')
+    # testdata_annotated = readImages('./annotated/')
+    # testdata_rot180 = readImages('./rot_180/')
+    # testdata_rot45 = readImages('./rot_45/')
+    # cropped_dict, annotated_dict, rot180_dict, rot45_dict = {}, {}, {}, {}
+    # print('Read test datasets')
     test_dirnames = ['crop_out', 'annotate_out', 'rot180_out', 'rot45_out']
     for dir in test_dirnames:
         if not os.path.exists(dir):
@@ -114,13 +131,54 @@ if __name__=="__main__":
     print('Created output folders for test datasets')
 
     for i in range(len(testdata_cropped)):
-        crop_hash = computeHash(testdata_cropped[i])
+        testimage_crop = imageio.imread('./cropped_img/'+testdata_cropped[i])[::,::].astype(np.float32)/255.
+        testimg_crop_hash = computeHash(testimage_crop)
+        crop_hash_baseline = compareHash(testimg_crop_hash, baseline_dict, 12)
+        crop_hash_blurred = compareHash(testimg_crop_hash, blurred_dict, 12)
+        # print('crop_hash_baseline', crop_hash_baseline, 'crop_hash_blurred', crop_hash_blurred)
+        for h in crop_hash_baseline:
+            baseline_dict[h].append(testdata_cropped[i])
+        for h in crop_hash_blurred:
+            blurred_dict[h].append(testdata_cropped[i])
 
-        annotate_hash = computeHash(testdata_annotated[i])
+        testimage_annotate = imageio.imread('./annotated/'+testdata_annotated[i])[::,::].astype(np.float32)/255.
+        testimg_annotate_hash = computeHash(testimage_annotate)
+        annotate_hash_baseline = compareHash(testimg_annotate_hash, baseline_dict, 10)
+        annotate_hash_blurred = compareHash(testimg_annotate_hash, blurred_dict, 10)
+        # print('annotate_hash_baseline', annotate_hash_baseline, 'annotate_hash_blurred', annotate_hash_blurred)
+        for h in annotate_hash_baseline:
+            baseline_dict[h].append(testdata_annotated[i])
+        for h in annotate_hash_blurred:
+            blurred_dict[h].append(testdata_annotated[i])
 
-        rot180_hash = computeHash(testdata_rot180[i])
+        testimage_rot180_im = imageio.imread('./rot_180/'+testdata_rot180[i])[::,::].astype(np.float32)/255.
+        testimg_rot180_hash = computeHash(testimage_rot180_im)
+        rot180_hash_baseline = compareHash(testimg_rot180_hash, baseline_dict, 15)
+        rot180_hash_blurred = compareHash(testimg_rot180_hash, blurred_dict, 15)
+        # print('rot180_hash_baseline', rot180_hash_baseline, 'rot180_hash_blurred', rot180_hash_blurred)
+        for h in rot180_hash_baseline:
+            baseline_dict[h].append(testdata_rot180[i])
+        for h in rot180_hash_blurred:
+            blurred_dict[h].append(testdata_rot180[i])
 
-        rot45_hash = computeHash(testdata_rot45[i])
+        testimage_rot45_im = imageio.imread('./rot_45/'+testdata_rot45[i])[::,::].astype(np.float32)/255.
+        testimg_rot45_hash = computeHash(testimage_rot45_im)
+        rot45_hash_baseline = compareHash(testimg_rot45_hash, baseline_dict, 17)
+        rot45_hash_blurred = compareHash(testimg_rot45_hash, blurred_dict, 17)
+        # print('rot45_hash_baseline', rot45_hash_baseline, 'rot45_hash_blurred', rot45_hash_blurred)
+        for h in rot45_hash_baseline:
+            baseline_dict[h].append(testdata_rot45[i])
+        for h in rot45_hash_blurred:
+            blurred_dict[h].append(testdata_rot45[i])
+
+    print('baseline_dict')
+    print("{:<8} {:<15}".format('Hash','Images'))
+    for k, v in baseline_dict.items():
+        print("{:<8} {:<100}".format(k, str(v)))
+    print('blurred_dict')
+    print("{:<8} {:<100}".format('Hash','Images'))
+    for k, v in blurred_dict.items():
+        print("{:<8} {:<100}".format(k, str(v)))
 
 
         # ###WRITE Cropped Image DCT###
