@@ -16,6 +16,6 @@ CS 583 Final Project Repo for Collaboration
 	* Rotating images 45 degrees(Crop the black pixels at the sides if the image is no longer rectangular) **DONE**
 7. Use the above altered images as the test dataset **DONE**
 8. Compute hash values for the test dataset. **DONE**
-9. Test if the test dataset images are detected as duplicates of the baseline images or as duplicates of the ‘GB’ images. **IN PROGRESS by Mannika**
-10. Verify if the hypothesis failed/succeeded.
+9. Test if the test dataset images are detected as duplicates of the baseline images or as duplicates of the ‘GB’ images. **DONE**
+10. Verify if the hypothesis failed/succeeded. **Results are not great**
 11. Conclude with an explanation of the results, and determine whether future work is necessary.
