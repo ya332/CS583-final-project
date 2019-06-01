@@ -40,15 +40,21 @@ def plotFace(original,blurred):
     plt.xticks([]), plt.yticks([])
     return None
 
-def computePerceptualHash_64bit(img):
+"""modified"""
+def computePerceptualHash(img, length=64):
     img_resize = cv2.resize(img, (32, 32))
     img_DCT = cv2.dct(img_resize)
-    low_freq_dct = img_DCT[1:9, 1:9]
+    
+    if length==64:
+        low_freq_dct = img_DCT[1:9, 1:9]
+    elif length==32:
+        low_freq_dct = img_DCT[1:7, 1:7]    
+        
     avg = np.mean(low_freq_dct)
     img_hash = np.where(low_freq_dct > avg, 1, 0)
-    hash = "".join(map(str, img_hash.flatten()))
+    hash = "".join(map(str, img_hash.flatten()[0:length]))
     return hash
-
+"""
 def computePerceptualHash_32bit(img):
     img_resize = cv2.resize(img, (32, 32))
     img_DCT = cv2.dct(img_resize)
@@ -59,23 +65,24 @@ def computePerceptualHash_32bit(img):
     return hash
 
 def computeAverageHash_32bit(img):
-    img_resize = cv2.resize(img, 6, 6))
+    img_resize = cv2.resize(img, (6, 6))
     avg = np.mean(img_resize)
     img_hash = np.where(img_resize > avg, 1, 0)
     hash = "".join(map(str, img_hash.flatten()[0:32]))
     return hash
+"""
 
-def computeAverageHash_64bit(img):
-    img_resize = cv2.resize(img, (8, 8))
+def computeAverageHash(img, length = 64):
+    if length == 64:
+        img_resize = cv2.resize(img, (8, 8))
+    elif length == 32:
+        img_resize = cv2.resize(img, (6, 6))
     avg = np.mean(img_resize)
     img_hash = np.where(img_resize > avg, 1, 0)
-    hash = "".join(map(str, img_hash.flatten()))
+    hash = "".join(map(str, img_hash.flatten()[0:length]))
     return hash
 
 def hammingDist(x, y):
-    # x = list(x)
-    # y = list(y)
-    # hd = sum([int(x[i]) ^ int(y[i]) for i in range(len(x))])
     hd = 0
     for ch1, ch2 in zip(x, y):
         if ch1 != ch2:
@@ -100,7 +107,7 @@ if __name__=="__main__":
     print('Found images:',len(images))
     baseline_dict,blurred_dict={},{}
 
-    dirnames=['base_out','blurred_out']
+    dirnames = ['base_out','blurred_out']
     for d in dirnames:
         if d not in os.listdir(os.getcwd()):
             os.mkdir(d)
@@ -109,8 +116,8 @@ if __name__=="__main__":
     for i in range(len(images)):
         plt.figure(i)
         blurredImage = gaussianBlur(images[i])
-        plotFace(images[i],blurredImage)
-        baselineHash, blurredHash= computeAverageHash(images[i]), computeAverageHash(blurredImage)
+        #plotFace(images[i],blurredImage)
+        baselineHash, blurredHash= computeAverageHash(images[i],length=32), computeAverageHash(blurredImage, length=32)
         baseline_dict[baselineHash] = ['original_'+str(i+1)]
         blurred_dict[blurredHash] = ['blurred_'+str(i+1)]
 
@@ -157,62 +164,176 @@ if __name__=="__main__":
             os.mkdir(dir)
     print('Created output folders for test datasets')
 
-    for i in range(len(testdata_cropped)):
-        testimage_crop = imageio.imread('./cropped_img/'+testdata_cropped[i])[::,::].astype(np.float32)/255.
-        testimg_crop_hash = computeAverageHash_64bit(testimage_crop)
-        crop_hash_baseline = compareHash(testimg_crop_hash, baseline_dict, 12) # threshold = 12 for 64-bit, 4 for 32-bit hash
-        crop_hash_blurred = compareHash(testimg_crop_hash, blurred_dict, 12)
-        # print('crop_hash_baseline', crop_hash_baseline, 'crop_hash_blurred', crop_hash_blurred)
-        for h in crop_hash_baseline:
-            baseline_dict[h].append(testdata_cropped[i])
-        for h in crop_hash_blurred:
-            blurred_dict[h].append(testdata_cropped[i])
+    #Initialize the y axis variables for accuracy plotting
+    y_base_ann, y_base_crop, y_base_rot180 ,y_base_rot45 = [], [], [], []
+    y_blur_ann, y_blur_crop, y_blur_rot180 ,y_blur_rot45 = [], [], [], []
 
-        testimage_annotate = imageio.imread('./annotated/'+testdata_annotated[i])[::,::].astype(np.float32)/255.
-        testimg_annotate_hash = computeAverageHash_64bit(testimage_annotate)
-        annotate_hash_baseline = compareHash(testimg_annotate_hash, baseline_dict, 10) # threshold = 10 for 64-bit, 2 for 32-bit hash
-        annotate_hash_blurred = compareHash(testimg_annotate_hash, blurred_dict, 10)
-        # print('annotate_hash_baseline', annotate_hash_baseline, 'annotate_hash_blurred', annotate_hash_blurred)
-        for h in annotate_hash_baseline:
-            baseline_dict[h].append(testdata_annotated[i])
-        for h in annotate_hash_blurred:
-            blurred_dict[h].append(testdata_annotated[i])
 
-        testimage_rot180_im = imageio.imread('./rot_180/'+testdata_rot180[i])[::,::].astype(np.float32)/255.
-        testimg_rot180_hash = computeAverageHash_64bit(testimage_rot180_im)
-        rot180_hash_baseline = compareHash(testimg_rot180_hash, baseline_dict, 15) # threshold = 15 for 64-bit
-        rot180_hash_blurred = compareHash(testimg_rot180_hash, blurred_dict, 15)
-        # print('rot180_hash_baseline', rot180_hash_baseline, 'rot180_hash_blurred', rot180_hash_blurred)
-        for h in rot180_hash_baseline:
-            baseline_dict[h].append(testdata_rot180[i])
-        for h in rot180_hash_blurred:
-            blurred_dict[h].append(testdata_rot180[i])
+    for th in range(1, 65):
+        for i in range(len(testdata_cropped)):
+            testimage_crop = imageio.imread('./cropped_img/'+testdata_cropped[i])[::,::].astype(np.float32)/255.
+            testimg_crop_hash = computeAverageHash(testimage_crop, length=64)
+            crop_hash_baseline = compareHash(testimg_crop_hash, baseline_dict, th) # threshold = 12 for 64-bit, 4 for 32-bit hash
+            crop_hash_blurred = compareHash(testimg_crop_hash, blurred_dict, th)
+            for h in crop_hash_baseline:
+                baseline_dict[h].append(testdata_cropped[i])
+            for h in crop_hash_blurred:
+                blurred_dict[h].append(testdata_cropped[i])
 
-        testimage_rot45_im = imageio.imread('./rot_45/'+testdata_rot45[i])[::,::].astype(np.float32)/255.
-        testimg_rot45_hash = computeAverageHash_64bit(testimage_rot45_im)
-        rot45_hash_baseline = compareHash(testimg_rot45_hash, baseline_dict, 17) # threshold = 17 for 64-bit
-        rot45_hash_blurred = compareHash(testimg_rot45_hash, blurred_dict, 17)
-        # print('rot45_hash_baseline', rot45_hash_baseline, 'rot45_hash_blurred', rot45_hash_blurred)
-        for h in rot45_hash_baseline:
-            baseline_dict[h].append(testdata_rot45[i])
-        for h in rot45_hash_blurred:
-            blurred_dict[h].append(testdata_rot45[i])
+            testimage_annotate = imageio.imread('./annotated/'+testdata_annotated[i])[::,::].astype(np.float32)/255.
+            testimg_annotate_hash = computeAverageHash(testimage_annotate, length=64)
+            annotate_hash_baseline = compareHash(testimg_annotate_hash, baseline_dict, th) # threshold = 10 for 64-bit, 2 for 32-bit hash
+            annotate_hash_blurred = compareHash(testimg_annotate_hash, blurred_dict, th)
+            for h in annotate_hash_baseline:
+                baseline_dict[h].append(testdata_annotated[i])
+            for h in annotate_hash_blurred:
+                blurred_dict[h].append(testdata_annotated[i])
 
-    final_baseline, final_blurred = {}, {}
-    for k in baseline_dict.keys():
-        final_baseline[baseline_dict[k][0]] = baseline_dict[k][1:]
+            testimage_rot180_im = imageio.imread('./rot_180/'+testdata_rot180[i])[::,::].astype(np.float32)/255.
+            testimg_rot180_hash = computeAverageHash(testimage_rot180_im, length=64)
+            rot180_hash_baseline = compareHash(testimg_rot180_hash, baseline_dict, th) # threshold = 15 for 64-bit
+            rot180_hash_blurred = compareHash(testimg_rot180_hash, blurred_dict, th)
+            for h in rot180_hash_baseline:
+                baseline_dict[h].append(testdata_rot180[i])
+            for h in rot180_hash_blurred:
+                blurred_dict[h].append(testdata_rot180[i])
+            
+            testimage_rot45_im = imageio.imread('./rot_45/'+testdata_rot45[i])[::,::].astype(np.float32)/255.
+            testimg_rot45_hash = computeAverageHash(testimage_rot45_im , length=64)
+            rot45_hash_baseline = compareHash(testimg_rot45_hash, baseline_dict, th) # threshold = 17 for 64-bit
+            rot45_hash_blurred = compareHash(testimg_rot45_hash, blurred_dict, th)
+            for h in rot45_hash_baseline:
+                baseline_dict[h].append(testdata_rot45[i])
+            for h in rot45_hash_blurred:
+                blurred_dict[h].append(testdata_rot45[i])
 
-    for k in blurred_dict.keys():
-        final_blurred[blurred_dict[k][0]] = blurred_dict[k][1:]
+        final_baseline, final_blurred = {}, {}
+        acc_annotate, acc_crop, acc_rot180, acc_rot45 = 0, 0, 0, 0
+      
+        i=1
+        for k in baseline_dict.keys():
+            final_baseline[baseline_dict[k][0]] = baseline_dict[k][1:]
+            
+            i=str(i)
+            if ('image_annotated_'+i+'.png' in baseline_dict[k][1:]):
+                acc_annotate += 1
 
-    print('baseline_dict')
-    print("{:<8} {:<150}".format('Hash','Images'))
-    for k, v in final_baseline.items():
-        print("{:<8} {:<100}".format(k, str(v)))
-    print('blurred_dict')
-    print("{:<8} {:<150}".format('Hash','Images'))
-    for k, v in final_blurred.items():
-        print("{:<8} {:<100}".format(k, str(v)))
+            elif ('cropped_img'+i+'.png' in baseline_dict[k][1:]):
+                acc_crop += 1
+            elif ('image_45_'+i+'.png' in baseline_dict[k][1:]):
+                acc_rot45 += 1
+            elif ('image_180_'+i+'.png' in baseline_dict[k][1:]):
+                acc_rot180 += 1
+            i=int(i)
+            i+=1
+        print('Threshold:', th)
+        print('Baseline final accuracies:',acc_annotate, acc_crop, acc_rot180, acc_rot45)
+        y_base_ann.append(acc_annotate)
+        y_base_crop.append(acc_crop)
+        y_base_rot180.append(acc_rot180)
+        y_base_rot45.append(acc_rot45)
+        
+
+        #y_base_ann, y_base_crop, y_base_rot180 ,y_base_rot45 = [], [], [], []
+        #y_blur_ann, y_blur_crop, y_blur_rot180 ,y_blur_rot45 = [], [], [], []
+
+        
+        gb_acc_annotate, gb_acc_crop, gb_acc_rot180, gb_acc_rot45 = 0, 0, 0, 0
+
+        i=1
+        for k in blurred_dict.keys():
+            final_blurred[blurred_dict[k][0]] = blurred_dict[k][1:]
+            i=str(i)
+            if ('image_annotated_'+i+'.png' in blurred_dict[k][1:]):
+                gb_acc_annotate += 1
+            elif ('cropped_img'+i+'.png' in blurred_dict[k][1:]):
+                gb_acc_crop += 1
+            elif ('image_45_'+i+'.png' in blurred_dict[k][1:]):
+                gb_acc_rot45 += 1
+            elif ('image_180_'+i+'.png' in blurred_dict[k][1:]):
+                gb_acc_rot180 += 1
+            i=int(i)
+            i+=1
+        print('Blurred final accuracies:', gb_acc_annotate, gb_acc_crop, gb_acc_rot180, gb_acc_rot45)
+        y_blur_ann.append(gb_acc_annotate)
+        y_blur_crop.append(gb_acc_crop)
+        y_blur_rot180.append(gb_acc_rot180)
+        y_blur_rot45.append(gb_acc_rot45)
+
+    y_base_ann = [x/28*100 for x in y_base_ann]
+    y_base_crop = [x/28*100 for x in y_base_crop]
+    y_base_rot180 = [x/28*100 for x in y_base_rot180]
+    y_base_rot45 = [x/28*100 for x in y_base_rot45]
+
+    y_blur_ann = [x/28*100 for x in y_blur_ann]
+    y_blur_crop = [x/28*100 for x in y_blur_crop]
+    y_blur_rot180 = [x/28*100 for x in y_blur_rot180]
+    y_blur_rot45 = [x/28*100 for x in y_blur_rot45]
+
+    script_dir = os.path.dirname(__file__)
+    results_dir = os.path.join(script_dir, 'plots/')
+
+    plt.figure(1)
+    plt.plot(range(1,65),y_base_ann)
+    plt.title('Accuracy vs Threshold for Annotated Baseline Images for Average Hash 64-Bits')
+    my_file='fig1.png'
+    plt.savefig(results_dir + my_file)
+
+    plt.figure(2)
+    plt.plot(range(1,65),y_base_crop)
+    plt.title('Accuracy vs Threshold for Cropped Baseline Images for Average Hash, 64-Bits')
+    my_file='fig2.png'
+    plt.savefig(results_dir + my_file)  
+
+    plt.figure(3)
+    plt.plot(range(1,65),y_base_rot180)
+    plt.title('Accuracy vs Threshold for 180 Degrees Rotated Baseline Images for Average Hash, 64-Bits')
+    my_file='fig3.png'
+    plt.savefig(results_dir + my_file)
+
+    plt.figure(4)
+    plt.plot(range(1,65),y_base_rot45)
+    plt.title('Accuracy vs Threshold for 45 Degrees Rotated Baseline Images for Average Hash, 64-Bits')
+    my_file='fig4.png'
+    plt.savefig(results_dir + my_file)
+
+    plt.figure(5)
+    plt.plot(range(1,65),y_blur_ann)
+    plt.title('Accuracy vs Threshold for Annotated Blurred Images for Average Hash 64-Bits')
+    my_file='fig5.png'
+    plt.savefig(results_dir + my_file)
+    
+    plt.figure(6)
+    plt.plot(range(1,65),y_blur_crop)
+    plt.title('Accuracy vs Threshold for Cropped Blurred Images for Average Hash 64-Bits')
+    my_file='fig6.png'
+    plt.savefig(results_dir + my_file)
+    
+    plt.figure(7)
+    plt.plot(range(1,65),y_blur_rot180)
+    plt.title('Accuracy vs Threshold for 180 Degrees Rotated Blurred Images for Average Hash 64-Bits')
+    my_file='fig7.png'
+    plt.savefig(results_dir + my_file)
+    
+    plt.figure(8)
+    plt.plot(range(1,65),y_blur_rot45)
+    plt.title('Accuracy vs Threshold for 45 Degrees Rotated Blurred Images for Average Hash, 64-Bits')
+    my_file='fig8.png'
+    plt.savefig(results_dir + my_file)
+    
+    #plt.show()
+    #plt.close()
+    
+'''
+        print('baseline_dict. threshold =', th)
+        print("{:<8} {:<100}".format('Hash','Images'))
+        for k, v in final_baseline.items():
+            print("{:<8} {:<100}".format(k, str(v)))
+        print('blurred_dict')
+        print("{:<8} {:<100}".format('Hash','Images'))
+        for k, v in final_blurred.items():
+            print("{:<8} {:<100}".format(k, str(v)))
+'''
 
 
         # ###WRITE Cropped Image DCT###
