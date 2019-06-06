@@ -5,6 +5,7 @@ import cv2
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 import pickle
+from textwrap import wrap
 
 DEFAULT_BASELINE_DCT = "baseline_dct.pkl"
 DEFAULT_BLURRED_DCT = "gb_dct.pkl"
@@ -44,12 +45,12 @@ def plotFace(original,blurred):
 def computePerceptualHash(img, length=64):
     img_resize = cv2.resize(img, (32, 32))
     img_DCT = cv2.dct(img_resize)
-    
+
     if length==64:
         low_freq_dct = img_DCT[1:9, 1:9]
     elif length==32:
-        low_freq_dct = img_DCT[1:7, 1:7]    
-        
+        low_freq_dct = img_DCT[1:7, 1:7]
+
     avg = np.mean(low_freq_dct)
     img_hash = np.where(low_freq_dct > avg, 1, 0)
     hash = "".join(map(str, img_hash.flatten()[0:length]))
@@ -171,7 +172,7 @@ if __name__=="__main__":
     length=32
     for th in range(1, length+1):
         for i in range(len(testdata_cropped)):
-            
+
             testimage_crop = imageio.imread('./cropped_img/'+testdata_cropped[i])[::,::].astype(np.float32)/255.
             testimg_crop_hash = computePerceptualHash(testimage_crop, length)
             crop_hash_baseline = compareHash(testimg_crop_hash, baseline_dict, th) # threshold = 12 for 64-bit, 4 for 32-bit hash
@@ -198,7 +199,7 @@ if __name__=="__main__":
                 baseline_dict[h].append(testdata_rot180[i])
             for h in rot180_hash_blurred:
                 blurred_dict[h].append(testdata_rot180[i])
-            
+
             testimage_rot45_im = imageio.imread('./rot_45/'+testdata_rot45[i])[::,::].astype(np.float32)/255.
             testimg_rot45_hash = computePerceptualHash(testimage_rot45_im , length)
             rot45_hash_baseline = compareHash(testimg_rot45_hash, baseline_dict, th) # threshold = 17 for 64-bit
@@ -210,11 +211,11 @@ if __name__=="__main__":
 
         final_baseline, final_blurred = {}, {}
         acc_annotate, acc_crop, acc_rot180, acc_rot45 = 0, 0, 0, 0
-      
+
         i=1
         for k in baseline_dict.keys():
             final_baseline[baseline_dict[k][0]] = baseline_dict[k][1:]
-            
+
             i=str(i)
             if ('image_annotated_'+i+'.png' in baseline_dict[k][1:]):
                 acc_annotate += 1
@@ -233,12 +234,12 @@ if __name__=="__main__":
         y_base_crop.append(acc_crop)
         y_base_rot180.append(acc_rot180)
         y_base_rot45.append(acc_rot45)
-        
+
 
         #y_base_ann, y_base_crop, y_base_rot180 ,y_base_rot45 = [], [], [], []
         #y_blur_ann, y_blur_crop, y_blur_rot180 ,y_blur_rot45 = [], [], [], []
 
-        
+
         gb_acc_annotate, gb_acc_crop, gb_acc_rot180, gb_acc_rot45 = 0, 0, 0, 0
 
         i=1
@@ -274,57 +275,73 @@ if __name__=="__main__":
     script_dir = os.path.dirname(__file__)
     results_dir = os.path.join(script_dir, 'plots/')
 
-    plt.figure(1)
+    plt.figure(1, figsize= (9, 7.4))
     plt.plot(range(1,length+1),y_base_ann)
-    plt.title('Accuracy vs Threshold for Annotated Baseline Images for DCT'+str(length)+'-Bits')
+    plt.title('\n'.join(wrap('Accuracy vs Threshold for Annotated Baseline Images for DCT Hash '+str(length)+'-Bits', 60)))
+    plt.xlabel('Threshold')
+    plt.ylabel('Accuracy (in %)')
     my_file='fig25.png'
     plt.savefig(results_dir + my_file)
 
-    plt.figure(2)
+    plt.figure(2, figsize= (9, 7.4))
     plt.plot(range(1,length+1),y_base_crop)
-    plt.title('Accuracy vs Threshold for Cropped Baseline Images for DCT Hash'+str(length)+'-Bits')
+    plt.title('\n'.join(wrap('Accuracy vs Threshold for Cropped Baseline Images for DCT Hash '+str(length)+'-Bits', 60)))
+    plt.xlabel('Threshold')
+    plt.ylabel('Accuracy (in %)')
     my_file='fig26.png'
-    plt.savefig(results_dir + my_file)  
+    plt.savefig(results_dir + my_file)
 
-    plt.figure(3)
+    plt.figure(3, figsize= (9, 7.4))
     plt.plot(range(1,length+1),y_base_rot180)
-    plt.title('Accuracy vs Threshold for 180 Degrees Rotated Baseline Images for DCT Hash'+str(length)+'-Bits')
+    plt.title('\n'.join(wrap('Accuracy vs Threshold for 180 Degrees Rotated Baseline Images for DCT Hash '+str(length)+'-Bits', 60)))
+    plt.xlabel('Threshold')
+    plt.ylabel('Accuracy (in %)')
     my_file='fig27.png'
     plt.savefig(results_dir + my_file)
 
-    plt.figure(4)
+    plt.figure(4, figsize= (9, 7.4))
     plt.plot(range(1,length+1),y_base_rot45)
-    plt.title('Accuracy vs Threshold for 45 Degrees Rotated Baseline Images for DCT Hash'+str(length)+'-Bits')
+    plt.title('\n'.join(wrap('Accuracy vs Threshold for 45 Degrees Rotated Baseline Images for DCT Hash '+str(length)+'-Bits', 60)))
+    plt.xlabel('Threshold')
+    plt.ylabel('Accuracy (in %)')
     my_file='fig28.png'
     plt.savefig(results_dir + my_file)
 
-    plt.figure(5)
+    plt.figure(5, figsize= (9, 7.4))
     plt.plot(range(1,length+1),y_blur_ann)
-    plt.title('Accuracy vs Threshold for Annotated Blurred Images for DCT Hash'+str(length)+'-Bits')
+    plt.title('\n'.join(wrap('Accuracy vs Threshold for Annotated Blurred Images for DCT Hash '+str(length)+'-Bits', 60)))
+    plt.xlabel('Threshold')
+    plt.ylabel('Accuracy (in %)')
     my_file='fig29.png'
     plt.savefig(results_dir + my_file)
-    
-    plt.figure(6)
+
+    plt.figure(6, figsize= (9, 7.4))
     plt.plot(range(1,length+1),y_blur_crop)
-    plt.title('Accuracy vs Threshold for Cropped Blurred Images for DCT Hash'+str(length)+'-Bits')
+    plt.title('\n'.join(wrap('Accuracy vs Threshold for Cropped Blurred Images for DCT Hash '+str(length)+'-Bits', 60)))
+    plt.xlabel('Threshold')
+    plt.ylabel('Accuracy (in %)')
     my_file='fig30.png'
     plt.savefig(results_dir + my_file)
-    
-    plt.figure(7)
+
+    plt.figure(7, figsize= (8, 6.4))
     plt.plot(range(1,length+1),y_blur_rot180)
-    plt.title('Accuracy vs Threshold for 180 Degrees Rotated Blurred Images for DCT Hash'+str(length)+'-Bits')
+    plt.title('\n'.join(wrap('Accuracy vs Threshold for 180 Degrees Rotated Blurred Images for DCT Hash '+str(length)+'-Bits', 60)))
+    plt.xlabel('Threshold')
+    plt.ylabel('Accuracy (in %)')
     my_file='fig31.png'
     plt.savefig(results_dir + my_file)
-    
-    plt.figure(8)
+
+    plt.figure(8, figsize= (9, 7.4))
     plt.plot(range(1,length+1),y_blur_rot45)
-    plt.title('Accuracy vs Threshold for 45 Degrees Rotated Blurred Images for DCT Hash'+str(length)+'-Bits')
+    plt.title('\n'.join(wrap('Accuracy vs Threshold for 45 Degrees Rotated Blurred Images for DCT Hash '+str(length)+'-Bits', 60)))
+    plt.xlabel('Threshold')
+    plt.ylabel('Accuracy (in %)')
     my_file='fig32.png'
     plt.savefig(results_dir + my_file)
-    
+
     #plt.show()
     #plt.close()
-    
+
 '''
         print('baseline_dict. threshold =', th)
         print("{:<8} {:<100}".format('Hash','Images'))
