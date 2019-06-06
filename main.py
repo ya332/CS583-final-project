@@ -28,20 +28,23 @@ def readImages(imgFolder='img/'):
     return images
 
 def gaussianBlur(img,ksize=(5,5),sigma=10):
+    """blur the image with Gaussian Smoothing technique"""
     #kernel = cv2.getGaussianKernel(ksize,sigma)
     dst = np.zeros_like(img)
     cv2.GaussianBlur(src=img,dst=dst,ksize=ksize,sigmaX=0)
     return dst
 
 def plotFace(original,blurred):
+    """Helper function to display an side-by-side comparison between the original and the blurred"""
     plt.subplot(121),plt.imshow(original,cmap=cm.Greys_r),plt.title('Original')
     plt.xticks([]), plt.yticks([])
     plt.subplot(122),plt.imshow(blurred,cmap=cm.Greys_r),plt.title('Gaussian Blurred')
     plt.xticks([]), plt.yticks([])
     return None
 
-"""modified"""
+
 def computePerceptualHash(img, length=64):
+    """Compute the hash based on Discrete Cosine Transformatio of an image"""
     img_resize = cv2.resize(img, (32, 32))
     img_DCT = cv2.dct(img_resize)
     
@@ -54,8 +57,10 @@ def computePerceptualHash(img, length=64):
     img_hash = np.where(low_freq_dct > avg, 1, 0)
     hash = "".join(map(str, img_hash.flatten()[0:length]))
     return hash
+
 """
 def computePerceptualHash_32bit(img):
+    #DEPRECATED
     img_resize = cv2.resize(img, (32, 32))
     img_DCT = cv2.dct(img_resize)
     low_freq_dct = img_DCT[1:7, 1:7]
@@ -65,6 +70,7 @@ def computePerceptualHash_32bit(img):
     return hash
 
 def computeAverageHash_32bit(img):
+    #DEPRECATED
     img_resize = cv2.resize(img, (6, 6))
     avg = np.mean(img_resize)
     img_hash = np.where(img_resize > avg, 1, 0)
@@ -73,6 +79,7 @@ def computeAverageHash_32bit(img):
 """
 
 def computeAverageHash(img, length = 64):
+    """Compute the hash of an image based on Average Hash Method"""
     if length == 64:
         img_resize = cv2.resize(img, (8, 8))
     elif length == 32:
@@ -83,6 +90,7 @@ def computeAverageHash(img, length = 64):
     return hash
 
 def hammingDist(x, y):
+    """Calculate the Humming Distance between two hashes"""
     hd = 0
     for ch1, ch2 in zip(x, y):
         if ch1 != ch2:
@@ -91,6 +99,7 @@ def hammingDist(x, y):
 
 
 def compareHash(query_hash, dict, r):
+    """Compare two hashes based on the input threshold value"""
     retdict = []
     for hash in dict.keys():
         if hammingDist(query_hash, hash) <= r:
@@ -102,6 +111,8 @@ def compareHash(query_hash, dict, r):
 with open('filename.pickle', 'rb') as handle:
     unserialized_data = pickle.load(handle)
 """
+
+#Simulation Code
 if __name__=="__main__":
     images = readImages('img/')
     print('Found images:',len(images))
@@ -168,13 +179,14 @@ if __name__=="__main__":
     y_base_ann, y_base_crop, y_base_rot180 ,y_base_rot45 = [], [], [], []
     y_blur_ann, y_blur_crop, y_blur_rot180 ,y_blur_rot45 = [], [], [], []
 
+    #Change the length here for different hash bit lengths
     length=32
     for th in range(1, length+1):
         for i in range(len(testdata_cropped)):
             
             testimage_crop = imageio.imread('./cropped_img/'+testdata_cropped[i])[::,::].astype(np.float32)/255.
             testimg_crop_hash = computePerceptualHash(testimage_crop, length)
-            crop_hash_baseline = compareHash(testimg_crop_hash, baseline_dict, th) # threshold = 12 for 64-bit, 4 for 32-bit hash
+            crop_hash_baseline = compareHash(testimg_crop_hash, baseline_dict, th) 
             crop_hash_blurred = compareHash(testimg_crop_hash, blurred_dict, th)
             for h in crop_hash_baseline:
                 baseline_dict[h].append(testdata_cropped[i])
@@ -183,7 +195,7 @@ if __name__=="__main__":
 
             testimage_annotate = imageio.imread('./annotated/'+testdata_annotated[i])[::,::].astype(np.float32)/255.
             testimg_annotate_hash = computePerceptualHash(testimage_annotate, length)
-            annotate_hash_baseline = compareHash(testimg_annotate_hash, baseline_dict, th) # threshold = 10 for 64-bit, 2 for 32-bit hash
+            annotate_hash_baseline = compareHash(testimg_annotate_hash, baseline_dict, th) 
             annotate_hash_blurred = compareHash(testimg_annotate_hash, blurred_dict, th)
             for h in annotate_hash_baseline:
                 baseline_dict[h].append(testdata_annotated[i])
@@ -192,7 +204,7 @@ if __name__=="__main__":
 
             testimage_rot180_im = imageio.imread('./rot_180/'+testdata_rot180[i])[::,::].astype(np.float32)/255.
             testimg_rot180_hash = computePerceptualHash(testimage_rot180_im, length)
-            rot180_hash_baseline = compareHash(testimg_rot180_hash, baseline_dict, th) # threshold = 15 for 64-bit
+            rot180_hash_baseline = compareHash(testimg_rot180_hash, baseline_dict, th) 
             rot180_hash_blurred = compareHash(testimg_rot180_hash, blurred_dict, th)
             for h in rot180_hash_baseline:
                 baseline_dict[h].append(testdata_rot180[i])
@@ -201,13 +213,14 @@ if __name__=="__main__":
             
             testimage_rot45_im = imageio.imread('./rot_45/'+testdata_rot45[i])[::,::].astype(np.float32)/255.
             testimg_rot45_hash = computePerceptualHash(testimage_rot45_im , length)
-            rot45_hash_baseline = compareHash(testimg_rot45_hash, baseline_dict, th) # threshold = 17 for 64-bit
+            rot45_hash_baseline = compareHash(testimg_rot45_hash, baseline_dict, th) 
             rot45_hash_blurred = compareHash(testimg_rot45_hash, blurred_dict, th)
             for h in rot45_hash_baseline:
                 baseline_dict[h].append(testdata_rot45[i])
             for h in rot45_hash_blurred:
                 blurred_dict[h].append(testdata_rot45[i])
 
+        #Calculate baseline accuracies
         final_baseline, final_blurred = {}, {}
         acc_annotate, acc_crop, acc_rot180, acc_rot45 = 0, 0, 0, 0
       
@@ -234,13 +247,9 @@ if __name__=="__main__":
         y_base_rot180.append(acc_rot180)
         y_base_rot45.append(acc_rot45)
         
-
-        #y_base_ann, y_base_crop, y_base_rot180 ,y_base_rot45 = [], [], [], []
-        #y_blur_ann, y_blur_crop, y_blur_rot180 ,y_blur_rot45 = [], [], [], []
-
-        
         gb_acc_annotate, gb_acc_crop, gb_acc_rot180, gb_acc_rot45 = 0, 0, 0, 0
 
+        #Calculate blurred accuracies
         i=1
         for k in blurred_dict.keys():
             final_blurred[blurred_dict[k][0]] = blurred_dict[k][1:]
@@ -261,6 +270,7 @@ if __name__=="__main__":
         y_blur_rot180.append(gb_acc_rot180)
         y_blur_rot45.append(gb_acc_rot45)
 
+    #Plot the results
     y_base_ann = [x/28*100 for x in y_base_ann]
     y_base_crop = [x/28*100 for x in y_base_crop]
     y_base_rot180 = [x/28*100 for x in y_base_rot180]
@@ -355,5 +365,5 @@ if __name__=="__main__":
 
 
     ######WARNING START######
-    #plt.show() #--> Figures created through the pyplot interface will consume too much memory until explicitly closed.
+    #plt.show() #--> Figures created through the pyplot interface will consume too much memory until explicitly closed because of in-memory RAM usage
     ######WARNING END########

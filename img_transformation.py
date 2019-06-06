@@ -12,6 +12,8 @@ import pickle
 from main import readImages
 dirname='annotated'
 
+#Script to produce text annotation, and rotations for the test dataset.
+
 if dirname not in os.listdir(os.getcwd()):
     os.mkdir(dirname)
 #images = readImages('img/')

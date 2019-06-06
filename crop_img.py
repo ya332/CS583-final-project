@@ -11,6 +11,7 @@ print(original_img)
 
 i = 1
 
+#Script to produce cropped images.
 for img in original_img:
     im = Image.open('./img/'+img+'/image0.jpg')
     # Size of cropped img: 148 x 157
