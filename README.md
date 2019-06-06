@@ -1,6 +1,23 @@
 # CS583-final-project
 CS 583 Final Project Repo for Collaboration
 
+**Requirements**
+imageio==2.5.0
+numpy==1.16.2
+matplotlib==3.1.0
+opencv-python==4.1.0.25
+Python 3.x
+
+**How to Run**
+1)First clone the repo
+$ git clone https://github.com/ya332/CS583-final-project.git
+
+2)Then, run the main script entitled 'main.py'.
+$ python main.py
+(Based on symbolic linking, you might need to do python3 main.py)
+Output folders for test datasets will be created in your current working directory where you ran the main.py
+
+**Final Project Road Map / Requirements**
 
 1. Use Yale Face Database B dataset for our experiments(576 poses per 28 human subjects) **DONE**
 2. Calculate hash values for about 28 images(1 of each subject) in the dataset as a baseline, where we first
@@ -17,5 +34,5 @@ CS 583 Final Project Repo for Collaboration
 7. Use the above altered images as the test dataset **DONE**
 8. Compute hash values for the test dataset. **DONE**
 9. Test if the test dataset images are detected as duplicates of the baseline images or as duplicates of the ‘GB’ images. **DONE**
-10. Verify if the hypothesis failed/succeeded. **Results are not great**
-11. Conclude with an explanation of the results, and determine whether future work is necessary.
+10. Verify if the hypothesis failed/succeeded. **DONE**
+11. Conclude with an explanation of the results, and determine whether future work is necessary. **DONE**
