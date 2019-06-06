@@ -1,21 +1,25 @@
 # CS583-final-project
 CS 583 Final Project Repo for Collaboration
 
-**Requirements**
-imageio==2.5.0
-numpy==1.16.2
-matplotlib==3.1.0
-opencv-python==4.1.0.25
-Python 3.x
+### Prerequisites
+imageio==2.5.0  
+numpy==1.16.2  
+matplotlib==3.1.0  
+opencv-python==4.1.0.25  
+Python 3.x  
 
-**How to Run**
+### How to Run
 1)First clone the repo
-$ git clone https://github.com/ya332/CS583-final-project.git
+```  
+$ git clone https://github.com/ya332/CS583-final-project.git  
+```
 
-2)Then, run the main script entitled 'main.py'.
-$ python main.py
-(Based on symbolic linking, you might need to do python3 main.py)
-Output folders for test datasets will be created in your current working directory where you ran the main.py
+2)Then, run the main script entitled 'main.py'.  
+```
+$ python main.py  
+```
+(Based on symbolic linking, you might need to do python3 main.py)  
+Output folders for test datasets will be created in your current working directory where you ran the main.py  
 
 **Final Project Road Map / Requirements**
 
