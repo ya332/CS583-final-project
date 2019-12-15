@@ -1,5 +1,5 @@
-# CS583-final-project
-CS 583 Final Project Repo for Collaboration
+# Perceptual Hasing as Adversarial Defense 
+We investigate the use of Gaussian Blurring as a defense against black-box attacks on extended Yale B facial image dataset.
 
 ### Prerequisites
 imageio==2.5.0  
